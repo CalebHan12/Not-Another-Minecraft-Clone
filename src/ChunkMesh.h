@@ -1,28 +1,40 @@
 #pragma once
 #include <vector>
 
+#include "Layer.h"
 #include "Camera.h"
-#include "Chunk.h"
 #include "Shader.h"
 
 #include "glm/glm.hpp"
 #include "glad/glad.h"
 
-class ChunkMesh
-{
+class Chunk;
+
+class ChunkMesh {
 public:
+	ChunkMesh() = default;
 	ChunkMesh(Chunk* chunk);
 	~ChunkMesh();
+
+	ChunkMesh(const ChunkMesh& other) = default;
+	ChunkMesh(ChunkMesh&& other) noexcept = default;
+
+	ChunkMesh& operator=(const ChunkMesh& other) = default;
+	ChunkMesh& operator=(ChunkMesh&& other) noexcept = default;
+
 	void draw(glm::vec3& position, Camera& camera);
 	void createMesh();
 
 private:
 	Shader shader;
-	
-	GLuint vao = 0, vbo = 0, ebo = 0;
 
-	// non-owning pointer - hell yea
-	Chunk* chunk;
+	GLuint vao = 0;
+	GLuint vbo = 0;
+	GLuint ebo = 0;
+
+	// Non-owning pointer to parent chunk
+	Chunk* chunk = nullptr;
+
 	std::vector<GLfloat> vertices;
 	std::vector<GLuint> indices;
 

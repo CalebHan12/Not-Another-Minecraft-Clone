@@ -3,6 +3,12 @@
 #include <fstream>
 #include <iostream>
 Shader::Shader(const std::filesystem::path& vertexPath, const std::filesystem::path& fragmentPath) {
+    if(!std::filesystem::exists(vertexPath) || !std::filesystem::exists(fragmentPath)) {
+        std::cout << "Shader file:" << vertexPath << " " << fragmentPath
+            << " doesn't exist!" << std::endl;
+        return;
+    }
+
     std::string vertexCode, fragmentCode;
     std::ifstream vShaderFile, fShaderFile;
 
@@ -23,6 +29,7 @@ Shader::Shader(const std::filesystem::path& vertexPath, const std::filesystem::p
         fragmentCode = fShaderStream.str();
     } catch (std::ifstream::failure& e) {
         std::cout << "Shader not read properly: " << e.what() << std::endl;
+        return;
     }
     const char* vShaderCode = vertexCode.c_str(), *fShaderCode = fragmentCode.c_str();
     GLuint vertex, fragment;
@@ -48,10 +55,6 @@ Shader::Shader(const std::filesystem::path& vertexPath, const std::filesystem::p
 
     glDeleteShader(vertex);
     glDeleteShader(fragment);
-}
-
-Shader::~Shader() {
-
 }
 
 void Shader::use() {

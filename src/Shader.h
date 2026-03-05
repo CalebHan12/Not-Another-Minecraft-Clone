@@ -15,11 +15,17 @@ enum class ShaderType : uint8_t
 
 std::string ShaderTypeToString(ShaderType type);
 
-class Shader 
-{
+class Shader {
 public:
+    Shader() = default;
     Shader(const std::filesystem::path& vertexPath, const std::filesystem::path& fragmentPath);
-    ~Shader();
+    ~Shader() = default;
+
+    Shader(const Shader& other) = default;
+    Shader(Shader&& other) noexcept = default;
+
+    Shader& operator=(const Shader& other) = default;
+    Shader& operator=(Shader&& other) noexcept = default;
 
     void use();
     void setBool(std::string_view name, bool value) const;

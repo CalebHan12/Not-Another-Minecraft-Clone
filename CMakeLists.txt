@@ -35,20 +35,18 @@ FetchContent_MakeAvailable(glfw)
 FetchContent_MakeAvailable(catch)
 FetchContent_MakeAvailable(glm)
 
-
-
 project(
         ${project_name}
         VERSION 1.0
         LANGUAGES C CXX
 )
 
-
 set(src_files
     ${CMAKE_SOURCE_DIR}/src/Camera.cpp
     ${CMAKE_SOURCE_DIR}/src/Chunk.cpp
     ${CMAKE_SOURCE_DIR}/src/ChunkMesh.cpp
     ${CMAKE_SOURCE_DIR}/src/Game.cpp
+    ${CMAKE_SOURCE_DIR}/src/Layer.cpp
     ${CMAKE_SOURCE_DIR}/src/main.cpp
     ${CMAKE_SOURCE_DIR}/src/Shader.cpp
     ${CMAKE_SOURCE_DIR}/src/Texture.cpp
@@ -64,6 +62,7 @@ set(header_files
     ${CMAKE_SOURCE_DIR}/src/Shader.h
     ${CMAKE_SOURCE_DIR}/src/Texture.h
     ${CMAKE_SOURCE_DIR}/src/WorldManager.h
+    ${CMAKE_SOURCE_DIR}/src/Layer.h
 )
 
 add_executable(
@@ -74,7 +73,7 @@ add_executable(
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     message("We are using GNU")
-    target_compile_options(${project_name} PRIVATE -Wall -Wextra -pedantic -Wno-psabi )
+    target_compile_options(${project_name} PRIVATE -Wall -Wextra -pedantic -Wno-psabi -g -O0)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(${project_name} PRIVATE -Weverything -Wno-c++98-compat)
 endif()
@@ -82,7 +81,7 @@ endif()
 target_include_directories(${project_name}
     PRIVATE
         ${CMAKE_SOURCE_DIR}/ext/
-) 
+)
 
 target_link_libraries(${project_name}
         PRIVATE

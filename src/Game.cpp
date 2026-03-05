@@ -1,8 +1,10 @@
-#include "Game.h"
-#include "Chunk.h"
-#include "Camera.h"
-
 #include <iostream>
+
+#include "Camera.h"
+#include "Chunk.h"
+#include "Game.h"
+#include "WorldManager.h"
+
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 
@@ -17,11 +19,13 @@ bool firstMouse = true;
 float deltaTime = 0.0f;	// time between current frame  and last frame
 float lastFrame = 0.0f;
 
-void framebufferSizeCallback(GLFWwindow* /*window*/, int width, int height) {
+void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
+	(void)window; // unused
 	glViewport(0, 0, width, height);
 }
 
-void mouseCallback(GLFWwindow* /*window*/, double xposIn, double yposIn) {
+void mouseCallback(GLFWwindow* window, double xposIn, double yposIn) {
+	(void)window; // unused
 	float xpos = static_cast<float>(xposIn);
 	float ypos = static_cast<float>(yposIn);
 
@@ -47,9 +51,9 @@ Game::Game(const char* windowName, const int windowHeight, const int windowWidth
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	window = glfwCreateWindow(windowHeight, windowWidth, windowName, NULL, NULL);
-	
+
 	// Creating stuff in a ctor is probably a bad idea
-	// TODO: Move to seperate function with proper error handling
+	// TODO: Move to seperate function with proper error handling, maybe throw an exception?
 	if(window == NULL) {
 		std::cout << "Failed to create GLFW window" << std::endl;
 		glfwTerminate();
@@ -93,30 +97,24 @@ void Game::processInput(GLFWwindow* inputWindow) {
 
 
 void Game::run() {
-	ChunkLayers chunkLayers;
-
-	Layer l;
-	for (int z = 0; z < LayerSize; ++z) {
-		l.fill(BlockType::dirt);
-		chunkLayers[z] = l;
-	}
-
-	Chunk chunk(chunkLayers);
-	glm::vec3 pos(0, 0, 0);
-	while (!glfwWindowShouldClose(window)) {
+	WorldManager wm;
+	wm.lastFrameCoords.x = 0;
+	wm.lastFrameCoords.z = 0;
+	while(!glfwWindowShouldClose(window)) {
 		// Compute delta time
 		auto currentFrame = static_cast<float>(glfwGetTime());
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
-		// input
+		// Gather input
 		processInput(window);
-		
-		// render
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);		
+
+		// Render
+		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT| GL_DEPTH_BUFFER_BIT);
 
-		chunk.draw(pos, camera);
+		wm.updatePosition(camera.Position);
+		wm.render();
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
