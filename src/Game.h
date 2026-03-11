@@ -1,20 +1,27 @@
 #pragma once
 #include "Texture.h"
 #include "GLFW/glfw3.h"
+#include "Player.h"
 
 const int SCREEN_WIDTH = 1920;
 const int SCREEN_HEIGHT = 1080;
 
-
-
 class Game {
 public:
 	Game(const char* windowName, const int windowHeight, const int windowWidth);
-	~Game();
+	~Game() { glfwTerminate(); };
+
+	Game(const Game& other) = delete;
+	Game& operator=(const Game& other) = delete;
+
+	Game(Game&& other) noexcept = delete;
+	Game& operator=(Game&& other) noexcept = delete;
+
 	void run();
 	static Texture* texture;
+
+	Player player;
 private:
 	GLFWwindow* window;
-
 	void processInput(GLFWwindow* window);
 };

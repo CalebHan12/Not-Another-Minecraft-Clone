@@ -42,18 +42,17 @@ using ChunkMap = std::unordered_map<ChunkCoord, std::unique_ptr<Chunk>, ChunkCoo
 
 class WorldManager {
 public:
-    WorldManager() = default;
+    WorldManager() { lastFrameCoords.x = -9999; lastFrameCoords.z = -9999; }
     ~WorldManager() = default;
 
     void updatePosition(glm::vec3 position);
     void unloadUnneededChunks(const std::unordered_set<ChunkCoord, ChunkCoordHash>& neededChunks);
-    void render() const;
+    void render(Camera& camera);
 
-    ChunkCoord lastFrameCoords;
-private:
+    private:
     [[nodiscard]] Chunk getNextChunk(int64_t x, int64_t y, int64_t z) const;
     void loadChunk(const ChunkCoord& cord);
 
+    ChunkCoord lastFrameCoords;
     ChunkMap chunks;
-
 };

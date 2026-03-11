@@ -8,8 +8,6 @@
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 
-// TODO: Move this stuff out of global space
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 Texture* Game::texture = nullptr;
 
 float lastX = SCREEN_WIDTH / 2.0f;
@@ -26,6 +24,11 @@ void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 
 void mouseCallback(GLFWwindow* window, double xposIn, double yposIn) {
 	(void)window; // unused
+
+	Game* game = static_cast<Game*>(glfwGetWindowUserPointer(window));
+	if(!game)
+		return;
+
 	float xpos = static_cast<float>(xposIn);
 	float ypos = static_cast<float>(yposIn);
 
@@ -41,7 +44,7 @@ void mouseCallback(GLFWwindow* window, double xposIn, double yposIn) {
 	lastX = xpos;
 	lastY = ypos;
 
-	camera.ProcessMouseMovement(xoffset, yoffset);
+	game->player.getCamera().ProcessMouseMovement(xoffset, yoffset);
 }
 
 Game::Game(const char* windowName, const int windowHeight, const int windowWidth) {
@@ -62,6 +65,7 @@ Game::Game(const char* windowName, const int windowHeight, const int windowWidth
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(0); //  Disable v-sync
 	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+	glfwSetWindowUserPointer(window, this);
 	glfwSetCursorPosCallback(window, mouseCallback);
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -77,11 +81,8 @@ Game::Game(const char* windowName, const int windowHeight, const int windowWidth
 	Game::texture = new Texture("textures/texture_atlas.jpg");
 }
 
-Game::~Game() {
-	glfwTerminate();
-}
-
 void Game::processInput(GLFWwindow* inputWindow) {
+	Camera& camera = this->player.getCamera();
 	if(glfwGetKey(inputWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(inputWindow, true);
 
@@ -98,8 +99,7 @@ void Game::processInput(GLFWwindow* inputWindow) {
 
 void Game::run() {
 	WorldManager wm;
-	wm.lastFrameCoords.x = 0;
-	wm.lastFrameCoords.z = 0;
+
 	while(!glfwWindowShouldClose(window)) {
 		// Compute delta time
 		auto currentFrame = static_cast<float>(glfwGetTime());
@@ -113,8 +113,8 @@ void Game::run() {
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT| GL_DEPTH_BUFFER_BIT);
 
-		wm.updatePosition(camera.Position);
-		wm.render();
+		wm.updatePosition(player.getCamera().Position);
+		wm.render(player.getCamera());
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();

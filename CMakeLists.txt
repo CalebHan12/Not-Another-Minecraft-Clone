@@ -52,6 +52,7 @@ set(src_files
     ${CMAKE_SOURCE_DIR}/src/Texture.cpp
     ${CMAKE_SOURCE_DIR}/src/glad.c
     ${CMAKE_SOURCE_DIR}/src/WorldManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/Player.cpp
 )
 
 set(header_files
@@ -63,6 +64,7 @@ set(header_files
     ${CMAKE_SOURCE_DIR}/src/Texture.h
     ${CMAKE_SOURCE_DIR}/src/WorldManager.h
     ${CMAKE_SOURCE_DIR}/src/Layer.h
+    ${CMAKE_SOURCE_DIR}/src/Player.h
 )
 
 add_executable(

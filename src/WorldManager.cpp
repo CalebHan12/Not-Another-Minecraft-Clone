@@ -3,8 +3,6 @@
 #include <unordered_set>
 #include <iostream>
 
-extern Camera camera;
-
 //! Quick chunk generator for now...
 //! Returns a whole dirt chunk for all chunks under y-level 15 and air for all above
 Chunk WorldManager::getNextChunk(int64_t x, int64_t y, int64_t z) const
@@ -47,7 +45,7 @@ void WorldManager::updatePosition(glm::vec3 position)
     unloadUnneededChunks(neededChunks);
 }
 
-void WorldManager::render() const
+void WorldManager::render(Camera& camera)
 {
     for (auto& [chunkCoord, chunk] : this->chunks)
     {
@@ -73,7 +71,7 @@ void WorldManager::unloadUnneededChunks(const std::unordered_set<ChunkCoord, Chu
 void WorldManager::loadChunk(const ChunkCoord &coord)
 {
     std::unique_ptr<Chunk> chunk = std::make_unique<Chunk>();
-    chunk->fill(BlockType::dirt);
+    chunk->fill(BlockType::grass);
     chunk->buildMesh();
 
     this->chunks[coord] = std::move(chunk);
