@@ -15,6 +15,8 @@ message(STATUS "Compiler: ${CMAKE_CXX_COMPILER}")
 message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}")
 message(STATUS "Compiler Version: ${CMAKE_CXX_COMPILER_VERSION}")
 
+set(GLFW_BUILD_WAYLAND OFF)
+
 FetchContent_Declare(
     glfw
     GIT_REPOSITORY https://github.com/glfw/glfw.git
@@ -42,11 +44,11 @@ project(
 )
 
 set(src_files
+    ${CMAKE_SOURCE_DIR}/src/Blocks.cpp
     ${CMAKE_SOURCE_DIR}/src/Camera.cpp
     ${CMAKE_SOURCE_DIR}/src/Chunk.cpp
     ${CMAKE_SOURCE_DIR}/src/ChunkMesh.cpp
     ${CMAKE_SOURCE_DIR}/src/Game.cpp
-    ${CMAKE_SOURCE_DIR}/src/Layer.cpp
     ${CMAKE_SOURCE_DIR}/src/main.cpp
     ${CMAKE_SOURCE_DIR}/src/Shader.cpp
     ${CMAKE_SOURCE_DIR}/src/Texture.cpp
@@ -56,6 +58,7 @@ set(src_files
 )
 
 set(header_files
+    ${CMAKE_SOURCE_DIR}/src/Blocks.h
     ${CMAKE_SOURCE_DIR}/src/Camera.h
     ${CMAKE_SOURCE_DIR}/src/Chunk.h
     ${CMAKE_SOURCE_DIR}/src/ChunkMesh.h
@@ -63,7 +66,6 @@ set(header_files
     ${CMAKE_SOURCE_DIR}/src/Shader.h
     ${CMAKE_SOURCE_DIR}/src/Texture.h
     ${CMAKE_SOURCE_DIR}/src/WorldManager.h
-    ${CMAKE_SOURCE_DIR}/src/Layer.h
     ${CMAKE_SOURCE_DIR}/src/Player.h
 )
 
@@ -73,9 +75,13 @@ add_executable(
     ${header_files}
 )
 
+file(COPY ${CMAKE_SOURCE_DIR}/src/shaders DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${CMAKE_SOURCE_DIR}/src/textures DESTINATION ${CMAKE_BINARY_DIR})
+
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     message("We are using GNU")
     target_compile_options(${project_name} PRIVATE -Wall -Wextra -pedantic -Wno-psabi -g -O0)
+    #target_compile_options(${project_name} PRIVATE -Wall -Wextra -pedantic -Wno-psabi -O3)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(${project_name} PRIVATE -Weverything -Wno-c++98-compat)
 endif()
