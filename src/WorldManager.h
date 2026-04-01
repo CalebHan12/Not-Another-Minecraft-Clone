@@ -17,8 +17,8 @@ enum class ChunkState : int8_t {
 struct ChunkCoord {
     ChunkCoord() = default;
     explicit ChunkCoord(double x, double z) {
-        this->x = static_cast<int32_t>(floor(x / ChunkSize));
-        this->z = static_cast<int32_t>(float(z / ChunkSize));
+        this->x = static_cast<int32_t>(floor(x / 16));
+        this->z = static_cast<int32_t>(float(z / 16));
     }
 
     bool operator==(const ChunkCoord& other) const {
@@ -35,24 +35,32 @@ struct ChunkCoordHash {
     }
 };
 
-constexpr int simulationDistance = 15;
+constexpr int simulationDistance = 8;
 constexpr int simulationArea = simulationDistance * simulationDistance;
 
 using ChunkMap = std::unordered_map<ChunkCoord, std::unique_ptr<Chunk>, ChunkCoordHash>;
 
 class WorldManager {
 public:
-    WorldManager() { lastFrameCoords.x = -9999; lastFrameCoords.z = -9999; }
+    WorldManager() {
+        lastFrameCoords.x = -9999;
+        lastFrameCoords.z = -9999;
+    }
     ~WorldManager() = default;
 
+    [[nodiscard]] BlockType getBlock(size_t x, size_t y, size_t z) const;
+    [[nodiscard]] Chunk* getChunk(ChunkCoord coord) const;
+
     void updatePosition(glm::vec3 position);
-    void unloadUnneededChunks(const std::unordered_set<ChunkCoord, ChunkCoordHash>& neededChunks);
     void render(Camera& camera);
 
-    private:
+    Shader shader;
+private:
     [[nodiscard]] Chunk getNextChunk(int64_t x, int64_t y, int64_t z) const;
+    void unloadUnneededChunks(const std::unordered_set<ChunkCoord, ChunkCoordHash>& neededChunks);
     void loadChunk(const ChunkCoord& cord);
 
     ChunkCoord lastFrameCoords;
     ChunkMap chunks;
+    bool loadOnce = true;
 };

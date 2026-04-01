@@ -2,35 +2,35 @@
 
 #include <array>
 
+#include "Blocks.h"
 #include "ChunkMesh.h"
-
-#include "Layer.h"
 
 #include "glm/glm.hpp"
 
-class Camera;
-class ChunkMesh;
 
-constexpr uint8_t ChunkSize = 16;
-using ChunkLayers = std::array<Layer, ChunkSize>;
+constexpr int ChunkWidth = 16;
+constexpr int ChunkHeight = 256;
+constexpr int ChunkDepth = 16;
+constexpr int TotalChunkBlocks = ChunkWidth * ChunkHeight * ChunkDepth;
+
+class Camera;
 
 class Chunk {
 public:
-	Chunk() : mesh(this) { };
-	Chunk(ChunkLayers chunkLayers);
+	Chunk() { blocks.fill(BlockType::air); };
 	~Chunk() = default;
 
-	void buildMesh();
-	void draw(glm::vec3& position, Camera& camera);
-	[[nodiscard]] BlockType getBlock(uint16_t x, uint16_t y, uint16_t z) const noexcept {
-		return this->chunkLayers[z].getBlock(x, y);
-	}
+	static int index(int x, int y, int z) { return x + ChunkWidth * y + (ChunkWidth * ChunkHeight) * z; }
 
 	//! Helper function for filling every layer with a specific block
 	void fill(BlockType type);
-	void setLayer(Layer& l, int z);
+	//! Fill a single y level with a specific block
+	void fillLayer(int y, BlockType type);
+	void setBlock(int x, int y, int z, BlockType type);
 
-private:
-	ChunkLayers chunkLayers;
+	BlockType getBlock(int x, int y, int z) const;
+
 	ChunkMesh mesh;
+private:
+	std::array<BlockType, TotalChunkBlocks> blocks;
 };

@@ -6,11 +6,10 @@
 #include "glm/glm.hpp"
 #include "glad/glad.h"
 
-enum class ShaderType : uint8_t
-{
-    VERTEX = 0,
-    FRAGMENT,
-    PROGRAM
+enum class ShaderType : uint8_t {
+    vertex = 0,
+    fragment,
+    program
 };
 
 std::string ShaderTypeToString(ShaderType type);
@@ -21,13 +20,9 @@ public:
     Shader(const std::filesystem::path& vertexPath, const std::filesystem::path& fragmentPath);
     ~Shader() = default;
 
-    Shader(const Shader& other) = default;
-    Shader(Shader&& other) noexcept = default;
-
-    Shader& operator=(const Shader& other) = default;
-    Shader& operator=(Shader&& other) noexcept = default;
-
+    void loadShader(const std::filesystem::path& vertexPath, const std::filesystem::path& fragmentPath);
     void use();
+
     void setBool(std::string_view name, bool value) const;
     void setInt(std::string_view name, int value) const;
     void setFloat(std::string_view name, float value) const;

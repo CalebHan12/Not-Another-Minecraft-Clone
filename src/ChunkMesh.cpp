@@ -8,6 +8,8 @@
 //#include "GLFW/glfw3.h"
 #include "glm/gtc/matrix_transform.hpp"
 
+//Shader chunkShader("shaders/shader.vert", "shaders/shader.frag");
+
 // Face drawing order
 // Bottom left, top left, top right, bottom right
 
@@ -65,20 +67,13 @@ std::vector<GLuint> ebo = {
 //	0.333f, 0.0f // top left
 //};
 
-ChunkMesh::ChunkMesh(Chunk* chunk)
-    : shader("shaders/shader.vert", "shaders/shader.frag") {
-	// Why are the shaders names hardcoded?
-	// Is it possible to have these in bytecode? Do I need plain-text stuff in the .exe dir?
-	this->chunk = chunk;
-}
-
 ChunkMesh::~ChunkMesh() {
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &vbo);
     glDeleteBuffers(1, &ebo);
 }
 
-void ChunkMesh::draw(glm::vec3& position, Camera& camera) {
+void ChunkMesh::draw(glm::vec3& position, Camera& camera, Shader& shader) {
 	// Uncomment to enable wireframe mode
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -95,7 +90,7 @@ void ChunkMesh::draw(glm::vec3& position, Camera& camera) {
     float angle = 0.0f;
     model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
     shader.setMat4("model", model);
-    
+
     Game::texture->useTexture();
 
 	glBindVertexArray(vao);
@@ -103,59 +98,31 @@ void ChunkMesh::draw(glm::vec3& position, Camera& camera) {
     glBindVertexArray(0);
 }
 
-void ChunkMesh::createMesh()
+void ChunkMesh::createMesh(const Chunk& chunk)
 {
-	/*
-	for(int x = 0; x < 16; x++) {
-		for(int y = 0; y < 16; y++) {
-			for(int z = 0; z < 16; z++) {
-				BlockType type = blocks[x + y * CHUNK_SIZE + z * CHUNK_SIZE * CHUNK_SIZE];
-				if(type == BlockType::air)
-					continue;
-				// Front
-				if(!doesFaceExist(BlockDirection::front, x, y, z))
-					addFaceToMesh(type, BlockDirection::front, frontFace, x, y, z);
-				// Back
-				if(!doesFaceExist(BlockDirection::back, x, y, z))
-					addFaceToMesh(type, BlockDirection::back, backFace, x, y, z);
-				// Top
-				if(!doesFaceExist(BlockDirection::top, x, y, z))
-					addFaceToMesh(type, BlockDirection::top, topFace, x, y, z);
-				// Bottom
-				if(!doesFaceExist(BlockDirection::bottom, x, y, z))
-					addFaceToMesh(type, BlockDirection::bottom, bottomFace, x, y, z);
-				// Left
-				if(!doesFaceExist(BlockDirection::left, x, y, z))
-					addFaceToMesh(type, BlockDirection::left, leftFace, x, y, z);
-				// Right
-				if(!doesFaceExist(BlockDirection::right, x, y, z))
-					addFaceToMesh(type, BlockDirection::right, rightFace, x, y, z);
-			}
-		}
-	}
-	*/
-	for (int x = 0; x < LayerSize; ++x) {
-		for (int y = 0; y < LayerSize; ++y) {
-			for (int z = 0; z < LayerSize; ++z) {
-				BlockType bt = this->chunk->getBlock(x, y, z);
+	for (int z = 0; z < ChunkDepth; ++z) {
+		for (int y = 0; y < ChunkHeight; ++y) {
+			for (int x = 0; x < ChunkWidth; ++x) {
+				BlockType bt = chunk.getBlock(x, y, z);
 				if(bt == BlockType::air)
 					continue;
-				if(!doesFaceExist(BlockDirection::front, x, y, z))
+
+				if(!doesFaceExist(chunk, BlockDirection::front, x, y, z))
 					addFaceToMesh(bt, BlockDirection::front, frontFace, x, y, z);
 
-				if(!doesFaceExist(BlockDirection::back, x, y, z))
+				if(!doesFaceExist(chunk, BlockDirection::back, x, y, z))
 					addFaceToMesh(bt, BlockDirection::back, backFace, x, y, z);
 
-				if(!doesFaceExist(BlockDirection::top, x, y, z))
+				if(!doesFaceExist(chunk, BlockDirection::top, x, y, z))
 					addFaceToMesh(bt, BlockDirection::top, topFace, x, y, z);
 
-				if(!doesFaceExist(BlockDirection::bottom, x, y, z))
+				if(!doesFaceExist(chunk, BlockDirection::bottom, x, y, z))
 					addFaceToMesh(bt, BlockDirection::bottom, bottomFace, x, y, z);
 
-				if(!doesFaceExist(BlockDirection::left, x, y, z))
+				if(!doesFaceExist(chunk, BlockDirection::left, x, y, z))
 					addFaceToMesh(bt, BlockDirection::left, leftFace, x, y, z);
 
-				if(!doesFaceExist(BlockDirection::right, x, y, z))
+				if(!doesFaceExist(chunk, BlockDirection::right, x, y, z))
 					addFaceToMesh(bt, BlockDirection::right, rightFace, x, y, z);
 			}
 		}
@@ -186,32 +153,28 @@ void ChunkMesh::createBuffers()
     glBindVertexArray(0);
 }
 
-bool ChunkMesh::doesFaceExist(BlockDirection direction, int x, int y, int z) const
+bool ChunkMesh::doesFaceExist(const Chunk& chunk, BlockDirection direction, int x, int y, int z) const
 {
-	int adjX = x;
-	int adjY = y;
-	int adjZ = z;
-	// think about a jump table if the value is "clamped"
-	if(direction == BlockDirection::top) {
-		adjY = y + 1;
-	} else if(direction == BlockDirection::bottom) {
-		adjY = y - 1;
-	} else if(direction == BlockDirection::front) {
-		adjZ = z + 1;
-	} else if(direction == BlockDirection::back) {
-		adjZ = z - 1;
-	} else if(direction == BlockDirection::left) {
-		adjX = x - 1;
-	} else if(direction == BlockDirection::right) {
-		adjX = x + 1;
-	}
+	struct AdjacentCoords {
+		AdjacentCoords(int x, int y, int z) : coords(x, y, z) { };
+		glm::ivec3 coords;
+	};
+
+	AdjacentCoords coords[6] = {
+		AdjacentCoords(x, y + 1, z), AdjacentCoords(x, y - 1, z), AdjacentCoords(x, y, z + 1),
+		AdjacentCoords(x, y, z - 1), AdjacentCoords(x - 1, y, z), AdjacentCoords(x + 1, y, z)
+	};
+
+	AdjacentCoords adjCoord = coords[static_cast<int>(direction)];
 
 	// Guard against array out-of-bounds
 	// Chunks can only see their own block data for now.
-	if(adjX < 0 || adjY < 0 || adjZ < 0 || adjX > 15 || adjY > 15 || adjZ > 15)
-		return false;
+	if((adjCoord.coords.x < 0 || adjCoord.coords.y < 0 || adjCoord.coords.z < 0) ||
+		(adjCoord.coords.x == ChunkWidth || adjCoord.coords.y == ChunkHeight || adjCoord.coords.z == ChunkDepth)) {
+			return false;
+	}
 
-	if(this->chunk->getBlock(adjX, adjY, adjZ) != BlockType::air)
+	if(chunk.getBlock(adjCoord.coords.x, adjCoord.coords.y, adjCoord.coords.z) != BlockType::air)
 		return true;
 
 	return false;
@@ -226,7 +189,7 @@ void ChunkMesh::addFaceToMesh(BlockType blockType, BlockDirection dir, const std
 		indicesCount = indices.back() + 4;
 
 	std::vector<GLfloat> textureCoords = Game::texture->getTextureCoords(blockType, dir);
-	
+
 	int textureIndex = 0;
 	for (int i = 0, index = 0; i < 4; ++i) {
 		vertices.push_back(faceVertices[index++] + x);

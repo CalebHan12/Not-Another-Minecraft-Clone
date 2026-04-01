@@ -2,6 +2,7 @@
 #include "Texture.h"
 #include "GLFW/glfw3.h"
 #include "Player.h"
+#include "WorldManager.h"
 
 const int SCREEN_WIDTH = 1920;
 const int SCREEN_HEIGHT = 1080;
@@ -21,7 +22,9 @@ public:
 	static Texture* texture;
 
 	Player player;
+	WorldManager wm;
 private:
 	GLFWwindow* window;
 	void processInput(GLFWwindow* window);
+	void processLeftClick();
 };

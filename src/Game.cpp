@@ -79,27 +79,28 @@ Game::Game(const char* windowName, const int windowHeight, const int windowWidth
 
 	// TODO: ... the entire texture system lol.
 	Game::texture = new Texture("textures/texture_atlas.jpg");
+	this->wm.shader.loadShader("shaders/shader.vert", "shaders/shader.frag");
 }
 
-void Game::processInput(GLFWwindow* inputWindow) {
+void Game::processInput(GLFWwindow* window) {
 	Camera& camera = this->player.getCamera();
-	if(glfwGetKey(inputWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(inputWindow, true);
+	if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, true);
 
-	if(glfwGetKey(inputWindow, GLFW_KEY_W) == GLFW_PRESS)
+	if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		camera.ProcessKeyboard(CameraMovement::FORWARD, deltaTime);
-	if(glfwGetKey(inputWindow, GLFW_KEY_S) == GLFW_PRESS)
+	if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
 		camera.ProcessKeyboard(CameraMovement::BACKWARD, deltaTime);
-	if(glfwGetKey(inputWindow, GLFW_KEY_A) == GLFW_PRESS)
+	if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
 		camera.ProcessKeyboard(CameraMovement::LEFT, deltaTime);
-	if(glfwGetKey(inputWindow, GLFW_KEY_D) == GLFW_PRESS)
+	if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		camera.ProcessKeyboard(CameraMovement::RIGHT, deltaTime);
-}
 
+	if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+		processLeftClick();
+}
 
 void Game::run() {
-	WorldManager wm;
-
 	while(!glfwWindowShouldClose(window)) {
 		// Compute delta time
 		auto currentFrame = static_cast<float>(glfwGetTime());
@@ -118,5 +119,26 @@ void Game::run() {
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
+	}
+}
+
+void Game::processLeftClick()
+{
+	glm::vec3 position = player.getCamera().Position;
+	glm::vec3 looking = player.getCamera().Front;
+	int maxLength = 10;
+
+	int stepX = looking.x <= 0 ? -1 : 1;
+	int stepY = looking.y <= 0 ? -1 : 1;
+	int stepZ = looking.z <= 0 ? -1 : 1;
+	for(int i = 0; i < maxLength; ++i) {
+		int x = position.x + (i * stepX);
+		int y = position.y + (i * stepY);
+		int z = position.z + (i * stepZ);
+		BlockType block = wm.getBlock(x, y, z);
+		if(block != BlockType::air) {
+			std::cout << "Found a block: " << static_cast<int>(block) << "\n";
+			return;
+		}
 	}
 }
