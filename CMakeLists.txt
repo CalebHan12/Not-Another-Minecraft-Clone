@@ -16,17 +16,18 @@ message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}")
 message(STATUS "Compiler Version: ${CMAKE_CXX_COMPILER_VERSION}")
 
 set(GLFW_BUILD_WAYLAND OFF)
+set(GLFW_BUILD_X11 ON)
 
 FetchContent_Declare(
     glfw
     GIT_REPOSITORY https://github.com/glfw/glfw.git
     GIT_TAG 3.4
 )
-FetchContent_Declare(
-    catch
-    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-    GIT_TAG v3.11.0
-)
+#FetchContent_Declare(
+#    catch
+#    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+#    GIT_TAG v3.11.0
+#)
 FetchContent_Declare(
     glm
     GIT_REPOSITORY https://github.com/g-truc/glm
@@ -34,7 +35,7 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(glfw)
-FetchContent_MakeAvailable(catch)
+#FetchContent_MakeAvailable(catch)
 FetchContent_MakeAvailable(glm)
 
 project(
@@ -93,7 +94,7 @@ target_include_directories(${project_name}
 
 target_link_libraries(${project_name}
         PRIVATE
-        Catch2::Catch2
+        #Catch2::Catch2
         glfw
         glm
 )
