@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 
 enum class BlockDirection : uint8_t {
 	top = 0,
@@ -17,3 +17,4 @@ enum class BlockType : uint8_t {
 	dirt,
 	stone
 };
+

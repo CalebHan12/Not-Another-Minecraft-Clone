@@ -4,13 +4,13 @@
 #include "Player.h"
 #include "WorldManager.h"
 
-const int SCREEN_WIDTH = 1920;
-const int SCREEN_HEIGHT = 1080;
+inline constexpr int SCREEN_WIDTH = 1920;
+inline constexpr int SCREEN_HEIGHT = 1080;
 
 class Game {
 public:
 	Game(const char* windowName, const int windowHeight, const int windowWidth);
-	~Game() { glfwTerminate(); };
+	~Game();
 
 	Game(const Game& other) = delete;
 	Game& operator=(const Game& other) = delete;

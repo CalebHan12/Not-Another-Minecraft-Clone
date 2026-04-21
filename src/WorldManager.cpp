@@ -1,51 +1,27 @@
 #include "WorldManager.h"
 
-#include <unordered_set>
+#include <cstdlib>
 #include <iostream>
-
-//! Quick chunk generator for now...
-//! Returns a whole dirt chunk for all chunks under y-level 15 and air for all above
-Chunk WorldManager::getNextChunk(int64_t x, int64_t y, int64_t z) const
-{
-    (void)x;
-    (void)z;
-    Chunk result;
-    if (y < 16)
-        result.fill(BlockType::dirt);
-    else
-        result.fill(BlockType::air);
-    return result;
-}
 
 void WorldManager::updatePosition(glm::vec3 position)
 {
-    ChunkCoord currentPlayerCoord(position.x, position.z);
+    ChunkCoord currentPlayerCoord(position.x, position.z, true);
 
-    // TODO: This won't render anything until the player moves on the first frame.
+    // This won't render anything until the player moves on the first frame.
     if(currentPlayerCoord == this->lastFrameCoords)
         return;
 
-    // A list of chunks we need for the current position
-    // We'll use this later to look at the current loaded chunks (this->chunks) to determine
-    // what needs to be thrown out
-    std::unordered_set<ChunkCoord, ChunkCoordHash> neededChunks;
-
-    if(loadOnce) {
-        for (int32_t x = -simulationDistance; x <= simulationDistance; ++x) {
-            for (int32_t z = -simulationDistance; z <= simulationDistance; ++z) {
-                ChunkCoord cc;
-                cc.x = currentPlayerCoord.x + x;
-                cc.z = currentPlayerCoord.z + z;
-                neededChunks.insert(cc);
-                if (this->chunks.find(cc) == chunks.end()) {
-                    std::cout << "Loading chunk " << x << " " << z << "\n";
-                    loadChunk(cc);
-                }
-            }
+    for (int32_t x = -simulationDistance; x <= simulationDistance; ++x) {
+        for (int32_t z = -simulationDistance; z <= simulationDistance; ++z) {
+            ChunkCoord cc;
+            cc.x = currentPlayerCoord.x + x;
+            cc.z = currentPlayerCoord.z + z;
+            if (this->chunks.find(cc) == chunks.end())
+                loadChunk(cc);
         }
-        unloadUnneededChunks(neededChunks);
-        loadOnce = false;
     }
+    unloadUnneededChunks(currentPlayerCoord);
+    lastFrameCoords = currentPlayerCoord;
 }
 
 void WorldManager::render(Camera& camera)
@@ -53,50 +29,70 @@ void WorldManager::render(Camera& camera)
     shader.use();
     for (auto& [chunkCoord, chunk] : this->chunks) {
         glm::vec3 pos;
-        pos.x = chunkCoord.x * 16;
+        pos.x = chunkCoord.x * ChunkWidth;
         pos.y = 0;
-        pos.z = chunkCoord.z * 16;
+        pos.z = chunkCoord.z * ChunkDepth;
 
         chunk->mesh.draw(pos, camera, this->shader);
     }
 }
 
-void WorldManager::unloadUnneededChunks(const std::unordered_set<ChunkCoord, ChunkCoordHash>& neededChunks)
+void WorldManager::unloadUnneededChunks(ChunkCoord center)
 {
-    // TODO: Replace this with a quick check for if the chunk coordinates are within the (player position) + render distance
     for (auto c = this->chunks.begin(); c != this->chunks.end();) {
-        if (neededChunks.find(c->first) == neededChunks.end())
-            c = this->chunks.erase(c);
-        else
-            ++c;
+        bool inRange = std::abs(c->first.x - center.x) <= simulationDistance &&
+                       std::abs(c->first.z - center.z) <= simulationDistance;
+        c = inRange ? ++c : this->chunks.erase(c);
     }
 }
 
-void WorldManager::loadChunk(const ChunkCoord &coord)
+ChunkNeighbors WorldManager::buildNeighbors(ChunkCoord coord) const
 {
-    std::unique_ptr<Chunk> chunk = std::make_unique<Chunk>();
-    chunk->fill(BlockType::air);
-    for(int y = 50; y >= 0; y--) {
-        chunk->fillLayer(y, BlockType::dirt);
-    }
-    chunk->mesh.createMesh(*chunk);
+    return {
+        .north = getChunk({coord.x,     coord.z + 1}),
+        .south = getChunk({coord.x,     coord.z - 1}),
+        .east  = getChunk({coord.x + 1, coord.z    }),
+        .west  = getChunk({coord.x - 1, coord.z    }),
+    };
+}
 
+void WorldManager::loadChunk(const ChunkCoord& coord)
+{
+    auto chunk = std::make_unique<Chunk>();
+    for (int y = 50; y >= 0; y--)
+        chunk->fillLayer(y, BlockType::stone);
+
+    chunk->mesh.createMesh(*chunk, buildNeighbors(coord));
     this->chunks[coord] = std::move(chunk);
+
+    // Remesh already-loaded neighbors — their border faces toward this chunk may now be occluded
+    const std::array<ChunkCoord, 4> borderCoords = {{
+        ChunkCoord{coord.x,     coord.z + 1},
+        ChunkCoord{coord.x,     coord.z - 1},
+        ChunkCoord{coord.x + 1, coord.z    },
+        ChunkCoord{coord.x - 1, coord.z    },
+    }};
+
+    for (const ChunkCoord& nc : borderCoords) {
+        if (Chunk* neighbor = getChunk(nc)) {
+            neighbor->mesh.createMesh(*neighbor, buildNeighbors(nc));
+        }
+    }
 }
 
 BlockType WorldManager::getBlock(size_t x, size_t y, size_t z) const
 {
     BlockType result = BlockType::air;
-    ChunkCoord coord(x, z);
-    if(auto chunkResult = chunks.find(coord); chunkResult != chunks.end()) {
-        Chunk& chunk = *chunkResult->second;
-        // Translate between world coordinates to local coordinates
-        int localX = x % 16;
-        int localY = y % 16;
-        int localZ = y % 16;
+    //ChunkCoord coord((intx, z);
+    //if(auto chunkResult = chunks.find(coord); chunkResult != chunks.end()) {
+    //    Chunk& chunk = *chunkResult->second;
+    //    // Translate between world coordinates to local coordinates
+    //    int localX = x % 16;
+    //    int localY = y % 16;
+    //    int localZ = z % 16;
 
-        result = chunk.getBlock(localX, localY, localZ);
-    }
+    //    result = chunk.getBlock(localX, localY, localZ);
+    //}
     return result;
 }
 

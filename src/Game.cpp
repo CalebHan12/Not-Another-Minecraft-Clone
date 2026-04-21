@@ -53,7 +53,7 @@ Game::Game(const char* windowName, const int windowHeight, const int windowWidth
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	window = glfwCreateWindow(windowHeight, windowWidth, windowName, NULL, NULL);
+	window = glfwCreateWindow(windowWidth, windowHeight, windowName, NULL, NULL);
 
 	// Creating stuff in a ctor is probably a bad idea
 	// TODO: Move to seperate function with proper error handling, maybe throw an exception?
@@ -80,6 +80,11 @@ Game::Game(const char* windowName, const int windowHeight, const int windowWidth
 	// TODO: ... the entire texture system lol.
 	Game::texture = new Texture("textures/texture_atlas.jpg");
 	this->wm.shader.loadShader("shaders/shader.vert", "shaders/shader.frag");
+}
+
+Game::~Game() {
+	glfwTerminate();
+	delete texture;
 }
 
 void Game::processInput(GLFWwindow* window) {

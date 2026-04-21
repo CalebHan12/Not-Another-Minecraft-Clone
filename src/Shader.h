@@ -12,7 +12,7 @@ enum class ShaderType : uint8_t {
     program
 };
 
-std::string ShaderTypeToString(ShaderType type);
+std::string toString(ShaderType type);
 
 class Shader {
 public:
@@ -20,8 +20,14 @@ public:
     Shader(const std::filesystem::path& vertexPath, const std::filesystem::path& fragmentPath);
     ~Shader() = default;
 
+    Shader& operator=(const Shader& other) = delete;
+    Shader(const Shader& other) = delete;
+
+    Shader& operator=(Shader&& other) noexcept = default;
+    Shader(Shader&& other) = default;
+
     void loadShader(const std::filesystem::path& vertexPath, const std::filesystem::path& fragmentPath);
-    void use();
+    void use() const;
 
     void setBool(std::string_view name, bool value) const;
     void setInt(std::string_view name, int value) const;

@@ -1,7 +1,8 @@
-
 #include "Shader.h"
+
 #include <fstream>
 #include <iostream>
+
 Shader::Shader(const std::filesystem::path& vertexPath, const std::filesystem::path& fragmentPath) {
     loadShader(vertexPath, fragmentPath);
 }
@@ -60,7 +61,7 @@ void Shader::loadShader(const std::filesystem::path& vertexPath, const std::file
     glDeleteShader(fragment);
 }
 
-void Shader::use() {
+void Shader::use() const {
     glUseProgram(id);
 }
 
@@ -119,20 +120,20 @@ void Shader::checkCompileErrors(GLuint shader, ShaderType type) {
         glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
         if(!success) {
             glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-            std::string typeString = ShaderTypeToString(type);
+            std::string typeString = toString(type);
             std::cout << "Shader compile error: " << typeString << "\n" << infoLog << std::endl;
         }
     } else if(type == ShaderType::program) { // Shader program linking
         glGetProgramiv(shader, GL_LINK_STATUS, &success);
         if(!success) {
             glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-            std::string typeString = ShaderTypeToString(type);
+            std::string typeString = toString(type);
             std::cout << "Shader program linking error: " << typeString << "\n" << infoLog << std::endl;
         }
     }
 }
 
-std::string ShaderTypeToString(ShaderType type) {
+std::string toString(ShaderType type) {
     switch (type) {
     case(ShaderType::vertex):
         return "Vertex";

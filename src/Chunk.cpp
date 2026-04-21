@@ -7,7 +7,7 @@ void Chunk::fill(BlockType type) {
 }
 
 void Chunk::fillLayer(int y, BlockType type) {
-	if(y > ChunkHeight || y < 0) { // guard
+	if(y >= ChunkHeight || y < 0) { // guard
 		return;
 	}
 

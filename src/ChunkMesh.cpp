@@ -5,67 +5,64 @@
 #include "glm/matrix.hpp"
 
 #include "glad/glad.h"
-//#include "GLFW/glfw3.h"
 #include "glm/gtc/matrix_transform.hpp"
-
-//Shader chunkShader("shaders/shader.vert", "shaders/shader.frag");
 
 // Face drawing order
 // Bottom left, top left, top right, bottom right
 
-std::vector<GLfloat> frontFace = {
+constexpr std::array<GLfloat, 12> frontFace = {
 	0, 0, 1,
 	0, 1, 1,
 	1, 1, 1,
 	1, 0, 1
 };
 
-std::vector<GLfloat> backFace = {
+constexpr std::array<GLfloat, 12> backFace = {
 	0, 0, 0,
 	0, 1, 0,
 	1, 1, 0,
 	1, 0, 0
 };
 
-std::vector<GLfloat> topFace = {
+constexpr std::array<GLfloat, 12> topFace = {
 	0, 1, 1,
 	0, 1, 0,
 	1, 1, 0,
 	1, 1, 1
 };
 
-std::vector<GLfloat> bottomFace = {
+constexpr std::array<GLfloat, 12> bottomFace = {
 	0, 0, 1,
 	0, 0, 0,
 	1, 0, 0,
 	1, 0, 1
 };
 
-std::vector<GLfloat> leftFace = {
+constexpr std::array<GLfloat, 12> leftFace = {
 	0, 0, 0,
 	0, 1, 0,
 	0, 1, 1,
 	0, 0, 1
 };
 
-std::vector<GLfloat> rightFace = {
+constexpr std::array<GLfloat, 12> rightFace = {
 	1, 0, 1,
 	1, 1, 1,
 	1, 1, 0,
 	1, 0, 0
 };
 
-std::vector<GLuint> ebo = {
-	0, 1, 2,
-	2, 3, 0
-};
-
-//std::vector<GLfloat> textureCoords = {
-//	0.0f, 0.0f, // top left
-//	0.0f, 1.0f, // bottom left
-//	0.333f, 1.0f, // bottom right
-//	0.333f, 0.0f // top left
-//};
+static glm::ivec3 getAdjacentCoords(int x, int y, int z, BlockDirection direction) {
+	switch (direction) {
+		case BlockDirection::top:    return { x, y + 1, z };
+		case BlockDirection::bottom: return { x, y - 1, z };
+		case BlockDirection::front:  return { x, y, z + 1 };
+		case BlockDirection::back:   return { x, y, z - 1 };
+		case BlockDirection::left:   return { x - 1, y, z };
+		case BlockDirection::right:  return { x + 1, y, z };
+		default:                     return { x, y, z };
+	}
+}
 
 ChunkMesh::~ChunkMesh() {
     glDeleteVertexArrays(1, &vao);
@@ -73,7 +70,7 @@ ChunkMesh::~ChunkMesh() {
     glDeleteBuffers(1, &ebo);
 }
 
-void ChunkMesh::draw(glm::vec3& position, Camera& camera, Shader& shader) {
+void ChunkMesh::draw(const glm::vec3& position, Camera& camera, Shader& shader) const {
 	// Uncomment to enable wireframe mode
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -94,44 +91,60 @@ void ChunkMesh::draw(glm::vec3& position, Camera& camera, Shader& shader) {
     Game::texture->useTexture();
 
 	glBindVertexArray(vao);
-    glDrawElements(GL_TRIANGLES, (GLsizei)indices.size(), GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, indiciesSize, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 }
 
-void ChunkMesh::createMesh(const Chunk& chunk)
+void ChunkMesh::createMesh(const Chunk& chunk, ChunkNeighbors neighbors)
 {
+	vertices.clear();
+	indices.clear();
+	constexpr size_t maxFaces = ChunkWidth * ChunkHeight * ChunkDepth * 6;
+	vertices.reserve(maxFaces * 4 * 5);
+	indices.reserve(maxFaces * 6);
 	for (int z = 0; z < ChunkDepth; ++z) {
 		for (int y = 0; y < ChunkHeight; ++y) {
 			for (int x = 0; x < ChunkWidth; ++x) {
-				BlockType bt = chunk.getBlock(x, y, z);
-				if(bt == BlockType::air)
+				BlockType blockType = chunk.getBlock(x, y, z);
+				if(blockType == BlockType::air)
 					continue;
 
-				if(!doesFaceExist(chunk, BlockDirection::front, x, y, z))
-					addFaceToMesh(bt, BlockDirection::front, frontFace, x, y, z);
+				if(!doesFaceExist(chunk, neighbors, BlockDirection::front, x, y, z))
+					addFaceToMesh(blockType, BlockDirection::front, frontFace, x, y, z);
 
-				if(!doesFaceExist(chunk, BlockDirection::back, x, y, z))
-					addFaceToMesh(bt, BlockDirection::back, backFace, x, y, z);
+				if(!doesFaceExist(chunk, neighbors, BlockDirection::back, x, y, z))
+					addFaceToMesh(blockType, BlockDirection::back, backFace, x, y, z);
 
-				if(!doesFaceExist(chunk, BlockDirection::top, x, y, z))
-					addFaceToMesh(bt, BlockDirection::top, topFace, x, y, z);
+				if(!doesFaceExist(chunk, neighbors, BlockDirection::top, x, y, z))
+					addFaceToMesh(blockType, BlockDirection::top, topFace, x, y, z);
 
-				if(!doesFaceExist(chunk, BlockDirection::bottom, x, y, z))
-					addFaceToMesh(bt, BlockDirection::bottom, bottomFace, x, y, z);
+				if(!doesFaceExist(chunk, neighbors, BlockDirection::bottom, x, y, z))
+					addFaceToMesh(blockType, BlockDirection::bottom, bottomFace, x, y, z);
 
-				if(!doesFaceExist(chunk, BlockDirection::left, x, y, z))
-					addFaceToMesh(bt, BlockDirection::left, leftFace, x, y, z);
+				if(!doesFaceExist(chunk, neighbors, BlockDirection::left, x, y, z))
+					addFaceToMesh(blockType, BlockDirection::left, leftFace, x, y, z);
 
-				if(!doesFaceExist(chunk, BlockDirection::right, x, y, z))
-					addFaceToMesh(bt, BlockDirection::right, rightFace, x, y, z);
+				if(!doesFaceExist(chunk, neighbors, BlockDirection::right, x, y, z))
+					addFaceToMesh(blockType, BlockDirection::right, rightFace, x, y, z);
 			}
 		}
 	}
+	indiciesSize = static_cast<GLsizei>(indices.size());
 	createBuffers();
+
+	vertices.clear();
+	vertices.shrink_to_fit();
+	indices.clear();
+	indices.shrink_to_fit();
 }
 
 void ChunkMesh::createBuffers()
 {
+    if (vao != 0) {
+        glDeleteVertexArrays(1, &vao);
+        glDeleteBuffers(1, &vbo);
+        glDeleteBuffers(1, &ebo);
+    }
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vbo);
     glGenBuffers(1, &ebo);
@@ -153,44 +166,33 @@ void ChunkMesh::createBuffers()
     glBindVertexArray(0);
 }
 
-bool ChunkMesh::doesFaceExist(const Chunk& chunk, BlockDirection direction, int x, int y, int z) const
+bool ChunkMesh::doesFaceExist(const Chunk& chunk, ChunkNeighbors neighbors, BlockDirection direction, int x, int y, int z) const
 {
-	struct AdjacentCoords {
-		AdjacentCoords(int x, int y, int z) : coords(x, y, z) { };
-		glm::ivec3 coords;
-	};
+	glm::ivec3 adj = getAdjacentCoords(x, y, z, direction);
 
-	AdjacentCoords coords[6] = {
-		AdjacentCoords(x, y + 1, z), AdjacentCoords(x, y - 1, z), AdjacentCoords(x, y, z + 1),
-		AdjacentCoords(x, y, z - 1), AdjacentCoords(x - 1, y, z), AdjacentCoords(x + 1, y, z)
-	};
+	if (adj.y < 0 || adj.y >= ChunkHeight)
+		return false;
 
-	AdjacentCoords adjCoord = coords[static_cast<int>(direction)];
+	if (adj.x >= 0 && adj.x < ChunkWidth && adj.z >= 0 && adj.z < ChunkDepth)
+		return chunk.getBlock(adj.x, adj.y, adj.z) != BlockType::air;
 
-	// Guard against array out-of-bounds
-	// Chunks can only see their own block data for now.
-	if((adjCoord.coords.x < 0 || adjCoord.coords.y < 0 || adjCoord.coords.z < 0) ||
-		(adjCoord.coords.x == ChunkWidth || adjCoord.coords.y == ChunkHeight || adjCoord.coords.z == ChunkDepth)) {
-			return false;
-	}
-
-	if(chunk.getBlock(adjCoord.coords.x, adjCoord.coords.y, adjCoord.coords.z) != BlockType::air)
-		return true;
+	if (adj.x < 0)
+		return neighbors.west  && neighbors.west->getBlock(ChunkWidth - 1, adj.y, adj.z) != BlockType::air;
+	if (adj.x >= ChunkWidth)
+		return neighbors.east  && neighbors.east->getBlock(0, adj.y, adj.z) != BlockType::air;
+	if (adj.z < 0)
+		return neighbors.south && neighbors.south->getBlock(adj.x, adj.y, ChunkDepth - 1) != BlockType::air;
+	if (adj.z >= ChunkDepth)
+		return neighbors.north && neighbors.north->getBlock(adj.x, adj.y, 0) != BlockType::air;
 
 	return false;
 }
 
-void ChunkMesh::addFaceToMesh(BlockType blockType, BlockDirection dir, const std::vector<GLfloat>& faceVertices, int x, int y, int z)
+void ChunkMesh::addFaceToMesh(BlockType blockType, BlockDirection dir, std::span<const float> faceVertices, int x, int y, int z)
 {
-	unsigned int indicesCount;
-	if(indices.empty())
-		indicesCount = 0;
-	else
-		indicesCount = indices.back() + 4;
-
-	std::vector<GLfloat> textureCoords = Game::texture->getTextureCoords(blockType, dir);
-
-	int textureIndex = 0;
+	uint32_t indiciesCount = indices.empty() ? 0 : indices.back() + 4;
+	TextureCoord textureCoords = Game::texture->getTextureCoords(blockType, dir);
+	int textureIndex = 0; 
 	for (int i = 0, index = 0; i < 4; ++i) {
 		vertices.push_back(faceVertices[index++] + x);
 		vertices.push_back(faceVertices[index++] + y);
@@ -198,5 +200,5 @@ void ChunkMesh::addFaceToMesh(BlockType blockType, BlockDirection dir, const std
 		vertices.push_back(textureCoords[textureIndex++]);
 		vertices.push_back(textureCoords[textureIndex++]);
 	}
-	indices.insert(indices.end(), { indicesCount, indicesCount + 1, indicesCount + 2, indicesCount + 2, indicesCount + 3, indicesCount });
+	indices.insert(indices.end(), { indiciesCount, indiciesCount + 1, indiciesCount + 2, indiciesCount + 2, indiciesCount + 3, indiciesCount });
 }

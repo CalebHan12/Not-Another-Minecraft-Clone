@@ -1,32 +1,41 @@
 #pragma once
 
+#include <cmath>
 #include <cstdint>
 #include <memory>
-#include <unordered_set>
 
 #include "Chunk.h"
 
-enum class ChunkState : int8_t {
-    Unloaded = 0,
-    Generating,
-    Meshing,
-    Ready,
-    Unloading
-};
-
 struct ChunkCoord {
     ChunkCoord() = default;
-    explicit ChunkCoord(double x, double z) {
-        this->x = static_cast<int32_t>(floor(x / 16));
-        this->z = static_cast<int32_t>(float(z / 16));
+    // transformBlockCoordiantes - boolean to divide the coordinates by 16 to convert world coordinates
+    ChunkCoord(int64_t x, int64_t z, bool transformBlockCoordinates = false) {
+        if (transformBlockCoordinates) {
+            this->x = x / 16;
+            this->z = z / 16;
+        } else {
+            this->x = x;
+            this->z = x;
+        }
     }
+
+    ChunkCoord(float x, float z, bool transformBlockCoordinates = false) {
+        if (transformBlockCoordinates) {
+            this->x = static_cast<int64_t>(std::floor(x / 16.0));
+            this->z = static_cast<int64_t>(std::floor(z / 16.0));
+        } else {
+            this->x = x;
+            this->z = x;
+        }
+    }
+
 
     bool operator==(const ChunkCoord& other) const {
         return x == other.x && z == other.z;
     }
 
-    int32_t x;
-    int32_t z;
+    int64_t x;
+    int64_t z;
 };
 
 struct ChunkCoordHash {
@@ -54,13 +63,13 @@ public:
     void updatePosition(glm::vec3 position);
     void render(Camera& camera);
 
-    Shader shader;
+    Shader shader{};
 private:
     [[nodiscard]] Chunk getNextChunk(int64_t x, int64_t y, int64_t z) const;
-    void unloadUnneededChunks(const std::unordered_set<ChunkCoord, ChunkCoordHash>& neededChunks);
-    void loadChunk(const ChunkCoord& cord);
+    [[nodiscard]] ChunkNeighbors buildNeighbors(ChunkCoord coord) const;
+    void unloadUnneededChunks(ChunkCoord center);
+    void loadChunk(const ChunkCoord& coord);
 
     ChunkCoord lastFrameCoords;
     ChunkMap chunks;
-    bool loadOnce = true;
 };
